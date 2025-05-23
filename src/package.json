@@ -4,8 +4,8 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "seed": "ts-node -r dotenv/config --transpile-only scripts/seed.ts",
+    "dev": "ts-node-dev --respawn --transpile-only ../src/index.ts",
+    "seed": "ts-node -r dotenv/config --transpile-only ../scripts/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

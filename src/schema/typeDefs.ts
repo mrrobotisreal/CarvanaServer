@@ -8,6 +8,7 @@ export const typeDefs = gql`
     orderID: Int!
     firstName: String!
     lastName: String!
+    email: String!
     status: String!
     paymentMethod: String!
     price: Float!
