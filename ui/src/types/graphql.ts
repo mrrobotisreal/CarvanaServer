@@ -12,6 +12,7 @@ export interface OrderNode {
   orderID: number;
   firstName: string;
   lastName: string;
+  email: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   price: number;

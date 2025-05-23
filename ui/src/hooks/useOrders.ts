@@ -13,8 +13,8 @@ const ORDERS_QUERY = gql/* GraphQL */ `
           orderID
           firstName
           lastName
+          email
           status
-          paymentMethod
           price
           orderedAt
         }

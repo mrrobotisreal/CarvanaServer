@@ -9,8 +9,15 @@ import { faker } from '@faker-js/faker';
     orderID: idx + 1,
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    status: faker.helpers.arrayElement(['ordered', 'paid', 'failed', 'in transit', 'delivered']),
-    paymentMethod: faker.helpers.arrayElement(['visa', 'mastercard', 'cash']),
+    email: faker.internet.email(),
+    status: faker.helpers.arrayElement([
+      "ordered",
+      "paid",
+      "failed",
+      "in transit",
+      "delivered",
+    ]),
+    paymentMethod: faker.helpers.arrayElement(["visa", "mastercard", "cash"]),
     price: faker.finance.amount({ min: 100, max: 50000, dec: 2 }),
     tax: faker.finance.amount({ min: 5, max: 2000, dec: 2 }),
     deliveryFee: faker.finance.amount({ min: 0, max: 100, dec: 2 }),
@@ -23,7 +30,7 @@ import { faker } from '@faker-js/faker';
     address: faker.location.streetAddress(),
     city: faker.location.city(),
     state: faker.location.state({ abbreviated: true }),
-    zip: faker.location.zipCode('#####'),
+    zip: faker.location.zipCode("#####"),
   }));
   await Order.insertMany(orders);
   console.log('Seeded ✨🌱');
