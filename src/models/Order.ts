@@ -5,8 +5,9 @@ export interface OrderDoc extends Document {
   orderID: number;
   firstName: string;
   lastName: string;
-  status: 'ordered' | 'paid' | 'failed' | 'in transit' | 'delivered';
-  paymentMethod: 'visa' | 'mastercard' | 'cash';
+  email: string;
+  status: "ordered" | "paid" | "failed" | "in transit" | "delivered";
+  paymentMethod: "visa" | "mastercard" | "cash";
   price: number;
   tax: number;
   deliveryFee: number;
@@ -30,6 +31,7 @@ const orderSchema = new Schema<OrderDoc>(
     orderID: Number,
     firstName: String,
     lastName: String,
+    email: String,
     status: String,
     paymentMethod: String,
     price: Number,
