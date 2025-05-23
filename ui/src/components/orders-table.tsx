@@ -47,7 +47,6 @@ export function OrdersTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  // const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -65,7 +64,6 @@ export function OrdersTable() {
   const { data, isLoading, status, error } = useOrders(pagination.pageSize);
   console.log(status, error);
 
-  // Memoize the data transformation to prevent infinite re-renders
   const tableData = useMemo(() => {
     return data?.edges.map((e) => e.node) ?? [];
   }, [data]);
@@ -80,23 +78,20 @@ export function OrdersTable() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    // onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     state: {
       pagination,
       sorting,
       columnFilters,
       columnVisibility,
-      // rowSelection,
     },
   });
 
-  // Helper function to update pagination
   const updatePageSize = (newPageSize: number) => {
     setPagination((prev) => ({
       ...prev,
       pageSize: newPageSize,
-      pageIndex: 0, // Reset to first page when changing page size
+      pageIndex: 0,
     }));
   };
 
@@ -116,7 +111,7 @@ export function OrdersTable() {
   }
 
   return (
-    <Card className="w-full rounded-md border py-4 px-4">
+    <Card className="w-full rounded-md border py-4 px-4 bg-gray-600">
       <div className="flex items-center justify-evenly py-4">
         <Popover open={isSearchFilterOpen} onOpenChange={setIsSearchFilterOpen}>
           <PopoverTrigger asChild>
@@ -215,7 +210,7 @@ export function OrdersTable() {
           placeholder="Search..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          className="w-1/2"
+          className="w-1/2 bg-white"
         />
 
         <Popover open={columnSettingsOpen} onOpenChange={setColumnSettingsOpen}>
@@ -258,7 +253,7 @@ export function OrdersTable() {
       </div>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-cvna-blue-2">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -274,7 +269,7 @@ export function OrdersTable() {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>

@@ -7,7 +7,7 @@ const qc = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={qc}>
-      <main className="p-8 max-w-7xl mx-auto space-y-4">
+      <main className="p-8 max-w-7xl mx-auto space-y-4 bg-cvna-blue-2">
         <h1 className="text-3xl font-bold">Carvana Orders</h1>
 
         <OrdersTable />
