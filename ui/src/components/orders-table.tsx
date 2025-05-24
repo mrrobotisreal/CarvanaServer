@@ -19,7 +19,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  CheckIcon,
   X,
   ChevronsRight,
 } from "lucide-react";
@@ -44,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 export function OrdersTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -274,7 +274,9 @@ export function OrdersTable() {
           </PopoverTrigger>
           <PopoverContent className="bg-cvna-blue-6">
             <div className="flex flex-col gap-2">
-              <p className="text-lg font-bold text-white">Search filters</p>
+              <p className="text-md md:text-lg font-bold text-white">
+                Search filters
+              </p>
               <Separator />
               <div className="flex flex-col gap-2 bg-white border border-gray-300 rounded-md p-2">
                 <div className="flex items-center space-x-2">
@@ -299,7 +301,7 @@ export function OrdersTable() {
                   />
                   <label
                     htmlFor="order-id"
-                    className="text-sm font-medium leading-none"
+                    className="font-medium leading-none"
                   >
                     Order ID
                   </label>
@@ -324,10 +326,7 @@ export function OrdersTable() {
                       setIsEmailChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="email" className="font-medium leading-none">
                     Email
                   </label>
                 </div>
@@ -353,7 +352,7 @@ export function OrdersTable() {
                   />
                   <label
                     htmlFor="first-name"
-                    className="text-sm font-medium leading-none"
+                    className="font-medium leading-none"
                   >
                     First Name
                   </label>
@@ -380,7 +379,7 @@ export function OrdersTable() {
                   />
                   <label
                     htmlFor="last-name"
-                    className="text-sm font-medium leading-none"
+                    className="font-medium leading-none"
                   >
                     Last Name
                   </label>
@@ -405,10 +404,7 @@ export function OrdersTable() {
                       setIsStatusChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="status"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="status" className="font-medium leading-none">
                     Status
                   </label>
                 </div>
@@ -437,7 +433,7 @@ export function OrdersTable() {
                   />
                   <label
                     htmlFor="payment-method"
-                    className="text-sm font-medium leading-none"
+                    className="font-medium leading-none"
                   >
                     Payment Method
                   </label>
@@ -462,10 +458,7 @@ export function OrdersTable() {
                       setIsPriceChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="price"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="price" className="font-medium leading-none">
                     Price
                   </label>
                 </div>
@@ -489,10 +482,7 @@ export function OrdersTable() {
                       setIsMakeChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="make"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="make" className="font-medium leading-none">
                     Make
                   </label>
                 </div>
@@ -519,7 +509,7 @@ export function OrdersTable() {
                   />
                   <label
                     htmlFor="car-model"
-                    className="text-sm font-medium leading-none"
+                    className="font-medium leading-none"
                   >
                     Car Model
                   </label>
@@ -545,10 +535,7 @@ export function OrdersTable() {
                       setIsYearChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="year"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="year" className="font-medium leading-none">
                     Year
                   </label>
                 </div>
@@ -573,10 +560,7 @@ export function OrdersTable() {
                       setIsColorChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="color"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="color" className="font-medium leading-none">
                     Color
                   </label>
                 </div>
@@ -600,10 +584,7 @@ export function OrdersTable() {
                       setIsVinChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="vin"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="vin" className="font-medium leading-none">
                     VIN
                   </label>
                 </div>
@@ -627,10 +608,7 @@ export function OrdersTable() {
                       setIsAddressChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="address"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="address" className="font-medium leading-none">
                     Address
                   </label>
                 </div>
@@ -655,10 +633,7 @@ export function OrdersTable() {
                       setIsCityChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="city"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="city" className="font-medium leading-none">
                     City
                   </label>
                 </div>
@@ -683,10 +658,7 @@ export function OrdersTable() {
                       setIsStateChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="state"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="state" className="font-medium leading-none">
                     State
                   </label>
                 </div>
@@ -711,10 +683,7 @@ export function OrdersTable() {
                       setIsZipChecked(!!checked);
                     }}
                   />
-                  <label
-                    htmlFor="zip"
-                    className="text-sm font-medium leading-none"
-                  >
+                  <label htmlFor="zip" className="font-medium leading-none">
                     Zip
                   </label>
                 </div>
@@ -754,13 +723,13 @@ export function OrdersTable() {
               <div className="hidden md:block">Column settings</div>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 bg-cvna-blue-6">
+          <PopoverContent className="w-70 bg-cvna-blue-6">
             <div className="flex flex-col gap-2">
-              <p className="text-lg font-bold text-white">
+              <p className="text-md md:text-lg font-bold text-white">
                 Column visibility settings
               </p>
               <Separator />
-              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md p-2">
+              <div className="flex flex-col gap-2 max-h-80 overflow-y-auto bg-white border border-gray-300 rounded-md p-2">
                 {allColumns
                   .filter((column) => {
                     return (
@@ -797,7 +766,7 @@ export function OrdersTable() {
                         />
                         <label
                           htmlFor={columnKey}
-                          className="text-sm font-medium leading-none cursor-pointer"
+                          className="font-medium leading-none cursor-pointer"
                         >
                           {columnLabel}
                         </label>
@@ -894,7 +863,7 @@ export function OrdersTable() {
         </Table>
       </div>
       <div className="flex flex-col gap-1">
-        <div className="flex flex-row items-center justify-between py-1">
+        <div className="flex flex-row items-center justify-between md:justify-around py-1">
           <div className="flex items-center space-x-2">
             <p className="text-sm md:text-lg font-normal text-white">
               {paginationDisplay[0]}
@@ -911,72 +880,46 @@ export function OrdersTable() {
                   variant="outline"
                   className="text-sm md:text-lg bg-cvna-blue-3 text-white"
                 >
-                  {pageSize} items
+                  {pageSize} orders
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-40 bg-cvna-blue-6 p-2">
-                <DropdownMenuItem
-                  onClick={() => updatePageSize(10)}
-                  className={`flex flex-row gap-2 border ${
-                    pageSize === 10 ? "border-green-500" : "border-white"
-                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-                >
-                  <p className="text-white font-bold text-center">10</p>
-                  {pageSize === 10 && (
-                    <CheckIcon
-                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                      size={20}
-                    />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => updatePageSize(25)}
-                  className={`flex flex-row gap-2 border ${
-                    pageSize === 25 ? "border-green-500" : "border-white"
-                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-                >
-                  <p className="text-white font-bold text-center">25</p>
-                  {pageSize === 25 && (
-                    <CheckIcon
-                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                      size={20}
-                    />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => updatePageSize(50)}
-                  className={`flex flex-row gap-2 border ${
-                    pageSize === 50 ? "border-green-500" : "border-white"
-                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-                >
-                  <p className="text-white font-bold text-center">50</p>
-                  {pageSize === 50 && (
-                    <CheckIcon
-                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                      size={20}
-                    />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => updatePageSize(100)}
-                  className={`flex flex-row gap-2 border ${
-                    pageSize === 100 ? "border-green-500" : "border-white"
-                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-                >
-                  <p className="text-white font-bold text-center">100</p>
-                  {pageSize === 100 && (
-                    <CheckIcon
-                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                      size={20}
-                    />
-                  )}
-                </DropdownMenuItem>
+              <DropdownMenuContent className="w-50 bg-cvna-blue-6 p-4">
+                <div className="flex flex-col gap-2">
+                  <p className="text-md md:text-lg font-bold text-white">
+                    Orders per page
+                  </p>
+                  <Separator />
+                  <RadioGroup
+                    defaultChecked
+                    defaultValue="10"
+                    className="flex flex-col gap-2 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md p-2"
+                    value={pageSize.toString()}
+                    onValueChange={(value) => updatePageSize(Number(value))}
+                  >
+                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
+                      <RadioGroupItem value="10" />
+                      <p className=" font-medium text-center">10 orders</p>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
+                      <RadioGroupItem value="20" />
+                      <p className=" font-medium text-center">20 orders</p>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
+                      <RadioGroupItem value="50" />
+                      <p className=" font-medium text-center">50 orders</p>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
+                      <RadioGroupItem value="100" />
+                      <p className=" font-medium text-center">100 orders</p>
+                    </DropdownMenuItem>
+                  </RadioGroup>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        <div className="flex flex-row items-center justify-between space-x-2">
+        <div className="flex flex-row items-center justify-between md:justify-center space-x-2">
           <div className="flex flex-row items-center space-x-2">
             <Button
               variant="outline"
