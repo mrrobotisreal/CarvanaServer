@@ -1,6 +1,5 @@
 import { Order } from '../models/Order';
-import { toCursor, fromCursor } from '../utils/encodeCursor';
-import { Types } from 'mongoose';
+import { toCursor, fromCursor } from "../utils/encodeCursor";
 
 export const resolvers = {
   Query: {
@@ -46,18 +45,15 @@ export const resolvers = {
         }
       }
 
-      // Calculate offset based on page number
       const pageSize = first || 10;
       const currentPage = Math.max(1, page || 1);
       const skip = (currentPage - 1) * pageSize;
 
-      // Get the documents for this page
       const docs = await Order.find(filter)
         .sort({ _id: 1 })
         .skip(skip)
         .limit(pageSize);
 
-      // Get total count for pagination info
       const totalCount = await Order.countDocuments(filter);
       const totalPages = Math.ceil(totalCount / pageSize);
 
