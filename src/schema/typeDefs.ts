@@ -48,8 +48,7 @@ export const typeDefs = gql`
   type Query {
     orders(
       first: Int = 10
-      after: String
-      last: Int
+      page: Int = 1
       search: String
       searchFields: [String!]
     ): OrderConnection!

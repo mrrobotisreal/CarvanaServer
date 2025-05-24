@@ -67,10 +67,7 @@ export function OrdersTable() {
   );
 
   const [pageSize, setPageSize] = useState(10);
-  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
-    undefined
-  );
-  const [cursorHistory, setCursorHistory] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [isSearchFilterOpen, setIsSearchFilterOpen] = useState(false);
   const [selectedSearchFilters, setSelectedSearchFilters] = useState<string[]>(
@@ -96,8 +93,6 @@ export function OrdersTable() {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
   const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
 
-  const [isRequestingLastPage, setIsRequestingLastPage] = useState(false);
-
   const debouncedSearchText = useDebounce(searchText, 1000);
 
   const visibleFields = useMemo(() => {
@@ -109,18 +104,15 @@ export function OrdersTable() {
   }, [selectedSearchFilters]);
 
   useEffect(() => {
-    setCurrentCursor(undefined);
-    setCursorHistory([]);
-    setIsRequestingLastPage(false);
+    setCurrentPage(1);
   }, [debouncedSearchText, searchFields]);
 
   const { data, isLoading, status, error } = useOrders(
     pageSize,
-    currentCursor,
+    currentPage,
     visibleFields,
     debouncedSearchText || undefined,
-    searchFields,
-    isRequestingLastPage ? pageSize : undefined
+    searchFields
   );
   console.log(status, error);
 
@@ -137,16 +129,15 @@ export function OrdersTable() {
     let startItem: number;
     let endItem: number;
 
-    if (isRequestingLastPage) {
-      const totalPages = Math.ceil(data.totalCount / pageSize);
-      currentPageNumber = totalPages;
-      startItem = Math.max(1, data.totalCount - pageSize + 1);
+    if (data.totalCount <= pageSize) {
+      currentPageNumber = 1;
+      startItem = 1;
       endItem = data.totalCount;
     } else {
-      currentPageNumber = cursorHistory.length + 1;
-      startItem = (currentPageNumber - 1) * pageSize + 1;
+      currentPageNumber = currentPage;
+      startItem = (currentPage - 1) * pageSize + 1;
       endItem = Math.min(
-        currentPageNumber * pageSize,
+        currentPage * pageSize,
         startItem + tableData.length - 1
       );
     }
@@ -155,13 +146,7 @@ export function OrdersTable() {
       `${startItem}-${endItem} of ${data.totalCount}`,
       `${currentPageNumber} of ${Math.ceil(data.totalCount / pageSize)}`,
     ];
-  }, [
-    data,
-    cursorHistory.length,
-    pageSize,
-    tableData.length,
-    isRequestingLastPage,
-  ]);
+  }, [data, currentPage, pageSize, tableData.length]);
 
   const visibleColumns = useMemo(() => {
     return allColumns.filter((column) => {
@@ -194,39 +179,30 @@ export function OrdersTable() {
 
   const updatePageSize = (newPageSize: number) => {
     setPageSize(newPageSize);
-    setCurrentCursor(undefined);
-    setCursorHistory([]);
-    setIsRequestingLastPage(false);
+    setCurrentPage(1);
   };
 
   const goToNextPage = () => {
-    if (data?.pageInfo.hasNextPage && data?.pageInfo.endCursor) {
-      setCursorHistory((prev) => [...prev, currentCursor || ""]);
-      setCurrentCursor(data.pageInfo.endCursor);
-      setIsRequestingLastPage(false);
+    if (data?.pageInfo.hasNextPage) {
+      setCurrentPage(currentPage + 1);
     }
   };
 
   const goToPreviousPage = () => {
-    if (cursorHistory.length > 0) {
-      const newHistory = [...cursorHistory];
-      const previousCursor = newHistory.pop();
-      setCursorHistory(newHistory);
-      setCurrentCursor(previousCursor === "" ? undefined : previousCursor);
-      setIsRequestingLastPage(false);
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
   };
 
   const goToFirstPage = () => {
-    setCurrentCursor(undefined);
-    setCursorHistory([]);
-    setIsRequestingLastPage(false);
+    setCurrentPage(1);
   };
 
   const goToLastPage = () => {
-    setCurrentCursor(undefined);
-    setCursorHistory([]);
-    setIsRequestingLastPage(true);
+    if (data) {
+      const totalPages = Math.ceil(data.totalCount / pageSize);
+      setCurrentPage(totalPages);
+    }
   };
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -924,7 +900,7 @@ export function OrdersTable() {
             <Button
               variant="outline"
               size="icon"
-              disabled={cursorHistory.length === 0 && !isRequestingLastPage}
+              disabled={currentPage === 1}
               onClick={goToFirstPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
@@ -933,7 +909,7 @@ export function OrdersTable() {
             <Button
               variant="outline"
               size="icon"
-              disabled={cursorHistory.length === 0 && !isRequestingLastPage}
+              disabled={currentPage === 1}
               onClick={goToPreviousPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
@@ -952,7 +928,7 @@ export function OrdersTable() {
             <Button
               variant="outline"
               size="icon"
-              disabled={!data?.pageInfo.hasNextPage || isRequestingLastPage}
+              disabled={!data?.pageInfo.hasNextPage}
               onClick={goToNextPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
@@ -961,7 +937,7 @@ export function OrdersTable() {
             <Button
               variant="outline"
               size="icon"
-              disabled={!data?.pageInfo.hasNextPage || isRequestingLastPage}
+              disabled={!data?.pageInfo.hasNextPage}
               onClick={goToLastPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >

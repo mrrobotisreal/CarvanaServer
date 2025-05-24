@@ -38,8 +38,8 @@ function buildOrdersQuery(visibleFields: string[]) {
   const fieldsString = allFields.join("\n          ");
 
   return gql`
-    query Orders($first: Int, $after: String, $last: Int, $search: String, $searchFields: [String!]) {
-      orders(first: $first, after: $after, last: $last, search: $search, searchFields: $searchFields) {
+    query Orders($first: Int!, $page: Int!, $search: String, $searchFields: [String!]) {
+      orders(first: $first, page: $page, search: $search, searchFields: $searchFields) {
         edges {
           cursor
           node {
@@ -58,7 +58,7 @@ function buildOrdersQuery(visibleFields: string[]) {
 
 export function useOrders(
   first = 10,
-  after?: string,
+  page = 1,
   visibleFields: string[] = [
     "orderID",
     "firstName",
@@ -69,15 +69,13 @@ export function useOrders(
     "orderedAt",
   ],
   search?: string,
-  searchFields?: string[],
-  last?: number
+  searchFields?: string[]
 ) {
   return useQuery({
     queryKey: [
       "orders",
       first,
-      after,
-      last,
+      page,
       visibleFields.sort(),
       search,
       searchFields?.sort(),
@@ -85,9 +83,8 @@ export function useOrders(
     queryFn: async () => {
       const query = buildOrdersQuery(visibleFields);
       const res: OrdersQueryResponse = await graphqlClient.request(query, {
-        first: last ? undefined : first,
-        after,
-        last,
+        first,
+        page,
         search,
         searchFields,
       });
