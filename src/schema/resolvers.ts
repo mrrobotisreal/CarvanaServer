@@ -4,7 +4,10 @@ import { Types } from 'mongoose';
 
 export const resolvers = {
   Query: {
-    orders: async (_: any, { first, after, search, searchFields }: any) => {
+    orders: async (
+      _: any,
+      { first, after, last, search, searchFields }: any
+    ) => {
       const filter: any = {};
 
       if (search) {
@@ -44,6 +47,31 @@ export const resolvers = {
 
           filter.$or = searchConditions;
         }
+      }
+
+      if (last) {
+        const countFilter = { ...filter };
+        const totalCount = await Order.countDocuments(countFilter);
+        const skipAmount = Math.max(0, totalCount - last);
+
+        const docs = await Order.find(filter)
+          .sort({ _id: 1 })
+          .skip(skipAmount)
+          .limit(last);
+
+        const edges = docs.map((doc) => ({
+          node: doc.toObject({ virtuals: false }),
+          cursor: toCursor(doc._id.toString()),
+        }));
+
+        return {
+          edges,
+          pageInfo: {
+            endCursor: edges.length ? edges[edges.length - 1].cursor : null,
+            hasNextPage: false,
+          },
+          totalCount,
+        };
       }
 
       if (after) {

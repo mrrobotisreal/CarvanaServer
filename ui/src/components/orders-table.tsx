@@ -21,6 +21,7 @@ import {
   ChevronsLeft,
   CheckIcon,
   X,
+  ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "./ui/card";
@@ -95,6 +96,8 @@ export function OrdersTable() {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
   const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
 
+  const [isRequestingLastPage, setIsRequestingLastPage] = useState(false);
+
   const debouncedSearchText = useDebounce(searchText, 1000);
 
   const visibleFields = useMemo(() => {
@@ -108,6 +111,7 @@ export function OrdersTable() {
   useEffect(() => {
     setCurrentCursor(undefined);
     setCursorHistory([]);
+    setIsRequestingLastPage(false);
   }, [debouncedSearchText, searchFields]);
 
   const { data, isLoading, status, error } = useOrders(
@@ -115,7 +119,8 @@ export function OrdersTable() {
     currentCursor,
     visibleFields,
     debouncedSearchText || undefined,
-    searchFields
+    searchFields,
+    isRequestingLastPage ? pageSize : undefined
   );
   console.log(status, error);
 
@@ -125,23 +130,38 @@ export function OrdersTable() {
 
   const paginationDisplay = useMemo(() => {
     if (!data || data.totalCount === 0) {
-      return ["No orders found", "No pages to display"];
+      return ["No orders", "No pages"];
     }
 
-    const currentPageNumber = cursorHistory.length + 1;
-    const startItem = (currentPageNumber - 1) * pageSize + 1;
-    const endItem = Math.min(
-      currentPageNumber * pageSize,
-      startItem + tableData.length - 1
-    );
+    let currentPageNumber: number;
+    let startItem: number;
+    let endItem: number;
+
+    if (isRequestingLastPage) {
+      const totalPages = Math.ceil(data.totalCount / pageSize);
+      currentPageNumber = totalPages;
+      startItem = Math.max(1, data.totalCount - pageSize + 1);
+      endItem = data.totalCount;
+    } else {
+      currentPageNumber = cursorHistory.length + 1;
+      startItem = (currentPageNumber - 1) * pageSize + 1;
+      endItem = Math.min(
+        currentPageNumber * pageSize,
+        startItem + tableData.length - 1
+      );
+    }
 
     return [
-      `Viewing orders ${startItem}-${endItem} of ${data.totalCount}`,
-      `Viewing page ${currentPageNumber} of ${Math.ceil(
-        data.totalCount / pageSize
-      )}`,
+      `${startItem}-${endItem} of ${data.totalCount}`,
+      `${currentPageNumber} of ${Math.ceil(data.totalCount / pageSize)}`,
     ];
-  }, [data, cursorHistory.length, pageSize, tableData.length]);
+  }, [
+    data,
+    cursorHistory.length,
+    pageSize,
+    tableData.length,
+    isRequestingLastPage,
+  ]);
 
   const visibleColumns = useMemo(() => {
     return allColumns.filter((column) => {
@@ -176,12 +196,14 @@ export function OrdersTable() {
     setPageSize(newPageSize);
     setCurrentCursor(undefined);
     setCursorHistory([]);
+    setIsRequestingLastPage(false);
   };
 
   const goToNextPage = () => {
     if (data?.pageInfo.hasNextPage && data?.pageInfo.endCursor) {
       setCursorHistory((prev) => [...prev, currentCursor || ""]);
       setCurrentCursor(data.pageInfo.endCursor);
+      setIsRequestingLastPage(false);
     }
   };
 
@@ -191,12 +213,20 @@ export function OrdersTable() {
       const previousCursor = newHistory.pop();
       setCursorHistory(newHistory);
       setCurrentCursor(previousCursor === "" ? undefined : previousCursor);
+      setIsRequestingLastPage(false);
     }
   };
 
   const goToFirstPage = () => {
     setCurrentCursor(undefined);
     setCursorHistory([]);
+    setIsRequestingLastPage(false);
+  };
+
+  const goToLastPage = () => {
+    setCurrentCursor(undefined);
+    setCursorHistory([]);
+    setIsRequestingLastPage(true);
   };
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -216,26 +246,30 @@ export function OrdersTable() {
 
   return (
     <Card className="w-full rounded-md border p-4 bg-gray-600">
-      <div className="flex items-center justify-evenly py-4">
+      <div className="flex flex-row items-center justify-evenly py-4">
         <Popover open={isSearchFilterOpen} onOpenChange={setIsSearchFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="bg-cvna-blue-3 text-white">
               <FilterIcon size={16} />
-              {selectedSearchFilters.length === 0 && "Search filters"}
-              {selectedSearchFilters.length > 4 &&
-                selectedSearchFilters
-                  .slice(0, 4)
-                  .map(
-                    (filter) => filter.charAt(0).toUpperCase() + filter.slice(1)
-                  )
-                  .join(", ") + "..."}
-              {selectedSearchFilters.length > 0 &&
-                selectedSearchFilters.length <= 4 &&
-                selectedSearchFilters
-                  .map(
-                    (filter) => filter.charAt(0).toUpperCase() + filter.slice(1)
-                  )
-                  .join(", ")}
+              <div className="hidden md:block">
+                {selectedSearchFilters.length === 0 && "Search filters"}
+                {selectedSearchFilters.length > 4 &&
+                  selectedSearchFilters
+                    .slice(0, 4)
+                    .map(
+                      (filter) =>
+                        filter.charAt(0).toUpperCase() + filter.slice(1)
+                    )
+                    .join(", ") + "..."}
+                {selectedSearchFilters.length > 0 &&
+                  selectedSearchFilters.length <= 4 &&
+                  selectedSearchFilters
+                    .map(
+                      (filter) =>
+                        filter.charAt(0).toUpperCase() + filter.slice(1)
+                    )
+                    .join(", ")}
+              </div>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="bg-cvna-blue-6">
@@ -689,12 +723,12 @@ export function OrdersTable() {
           </PopoverContent>
         </Popover>
 
-        <div className="relative w-1/2">
+        <div className="relative mx-1 md:w-1/2">
           <Input
             placeholder={
               selectedSearchFilters.length > 0
                 ? `Search in ${selectedSearchFilters.join(", ")}...`
-                : "Search across all fields..."
+                : "Search all fields..."
             }
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -717,6 +751,7 @@ export function OrdersTable() {
           <PopoverTrigger asChild>
             <Button variant="outline" className="bg-cvna-blue-3 text-white">
               <SettingsIcon size={16} />
+              <div className="hidden md:block">Column settings</div>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80 bg-cvna-blue-6">
@@ -858,85 +893,95 @@ export function OrdersTable() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center space-x-2">
-          <p className="text-lg font-normal text-white">
-            {paginationDisplay[0]}
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <DropdownMenu open={isPageSizeOpen} onOpenChange={setIsPageSizeOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="bg-cvna-blue-3 text-white">
-                {pageSize} items per page
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-40 bg-cvna-blue-6 p-2">
-              <DropdownMenuItem
-                onClick={() => updatePageSize(10)}
-                className={`flex flex-row gap-2 border ${
-                  pageSize === 10 ? "border-green-500" : "border-white"
-                } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-              >
-                <p className="text-white font-bold text-center">10</p>
-                {pageSize === 10 && (
-                  <CheckIcon
-                    className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                    size={20}
-                  />
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => updatePageSize(25)}
-                className={`flex flex-row gap-2 border ${
-                  pageSize === 25 ? "border-green-500" : "border-white"
-                } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-              >
-                <p className="text-white font-bold text-center">25</p>
-                {pageSize === 25 && (
-                  <CheckIcon
-                    className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                    size={20}
-                  />
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => updatePageSize(50)}
-                className={`flex flex-row gap-2 border ${
-                  pageSize === 50 ? "border-green-500" : "border-white"
-                } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-              >
-                <p className="text-white font-bold text-center">50</p>
-                {pageSize === 50 && (
-                  <CheckIcon
-                    className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                    size={20}
-                  />
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => updatePageSize(100)}
-                className={`flex flex-row gap-2 border ${
-                  pageSize === 100 ? "border-green-500" : "border-white"
-                } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
-              >
-                <p className="text-white font-bold text-center">100</p>
-                {pageSize === 100 && (
-                  <CheckIcon
-                    className="text-white font-bold bg-green-600 p-0 rounded-sm"
-                    size={20}
-                  />
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-row items-center justify-between py-1">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm md:text-lg font-normal text-white">
+              {paginationDisplay[0]}
+            </p>
+          </div>
 
           <div className="flex items-center space-x-2">
+            <DropdownMenu
+              open={isPageSizeOpen}
+              onOpenChange={setIsPageSizeOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="text-sm md:text-lg bg-cvna-blue-3 text-white"
+                >
+                  {pageSize} items
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-40 bg-cvna-blue-6 p-2">
+                <DropdownMenuItem
+                  onClick={() => updatePageSize(10)}
+                  className={`flex flex-row gap-2 border ${
+                    pageSize === 10 ? "border-green-500" : "border-white"
+                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
+                >
+                  <p className="text-white font-bold text-center">10</p>
+                  {pageSize === 10 && (
+                    <CheckIcon
+                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
+                      size={20}
+                    />
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => updatePageSize(25)}
+                  className={`flex flex-row gap-2 border ${
+                    pageSize === 25 ? "border-green-500" : "border-white"
+                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
+                >
+                  <p className="text-white font-bold text-center">25</p>
+                  {pageSize === 25 && (
+                    <CheckIcon
+                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
+                      size={20}
+                    />
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => updatePageSize(50)}
+                  className={`flex flex-row gap-2 border ${
+                    pageSize === 50 ? "border-green-500" : "border-white"
+                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
+                >
+                  <p className="text-white font-bold text-center">50</p>
+                  {pageSize === 50 && (
+                    <CheckIcon
+                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
+                      size={20}
+                    />
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => updatePageSize(100)}
+                  className={`flex flex-row gap-2 border ${
+                    pageSize === 100 ? "border-green-500" : "border-white"
+                  } p-2 my-2 bg-cvna-blue-5 items-center justify-center hover:bg-cvna-blue-4`}
+                >
+                  <p className="text-white font-bold text-center">100</p>
+                  {pageSize === 100 && (
+                    <CheckIcon
+                      className="text-white font-bold bg-green-600 p-0 rounded-sm"
+                      size={20}
+                    />
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <div className="flex flex-row items-center justify-between space-x-2">
+          <div className="flex flex-row items-center space-x-2">
             <Button
               variant="outline"
               size="icon"
-              disabled={cursorHistory.length === 0}
+              disabled={cursorHistory.length === 0 && !isRequestingLastPage}
               onClick={goToFirstPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
@@ -945,23 +990,39 @@ export function OrdersTable() {
             <Button
               variant="outline"
               size="icon"
-              disabled={cursorHistory.length === 0}
+              disabled={cursorHistory.length === 0 && !isRequestingLastPage}
               onClick={goToPreviousPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
               <ChevronLeft size={16} />
             </Button>
-            <span className="text-lg font-medium mx-2 text-white">
+          </div>
+          <div className="flex flex-col items-center justify-center gap-0">
+            <span className="text-sm md:text-lg font-medium mx-2 text-white">
+              Page
+            </span>
+            <span className="text-sm md:text-lg font-medium mx-2 text-white">
               {paginationDisplay[1]}
             </span>
+          </div>
+          <div className="flex flex-row items-center space-x-2">
             <Button
               variant="outline"
               size="icon"
-              disabled={!data?.pageInfo.hasNextPage}
+              disabled={!data?.pageInfo.hasNextPage || isRequestingLastPage}
               onClick={goToNextPage}
               className="mx-1 bg-cvna-blue-3 text-white"
             >
               <ChevronRight size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!data?.pageInfo.hasNextPage || isRequestingLastPage}
+              onClick={goToLastPage}
+              className="mx-1 bg-cvna-blue-3 text-white"
+            >
+              <ChevronsRight size={16} />
             </Button>
           </div>
         </div>

@@ -49,6 +49,7 @@ export const typeDefs = gql`
     orders(
       first: Int = 10
       after: String
+      last: Int
       search: String
       searchFields: [String!]
     ): OrderConnection!
