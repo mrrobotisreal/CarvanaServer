@@ -3,41 +3,91 @@ import { useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/graphql-client";
 import { gql } from "graphql-request";
 
-// TODO: allow for dynamic fields based on column visibility
-const ORDERS_QUERY = gql/* GraphQL */ `
-  query Orders($first: Int!, $after: String) {
-    orders(first: $first, after: $after) {
-      edges {
-        cursor
-        node {
-          orderID
-          firstName
-          lastName
-          email
-          status
-          price
-          orderedAt
+const fieldMapping: Record<string, string> = {
+  orderID: "orderID",
+  firstName: "firstName",
+  lastName: "lastName",
+  email: "email",
+  status: "status",
+  paymentMethod: "paymentMethod",
+  price: "price",
+  tax: "tax",
+  deliveryFee: "deliveryFee",
+  orderedAt: "orderedAt",
+  paidAt: "paidAt",
+  inTransitAt: "inTransitAt",
+  deliveredAt: "deliveredAt",
+  make: "make",
+  carModel: "carModel",
+  year: "year",
+  color: "color",
+  vin: "vin",
+  address: "address",
+  city: "city",
+  state: "state",
+  zip: "zip",
+};
+
+function buildOrdersQuery(visibleFields: string[]) {
+  const graphqlFields = visibleFields
+    .filter((field) => field !== "actions" && fieldMapping[field])
+    .map((field) => fieldMapping[field]);
+
+  const allFields = [...new Set([...graphqlFields])];
+
+  const fieldsString = allFields.join("\n          ");
+
+  return gql`
+    query Orders($first: Int!, $after: String, $search: String, $searchFields: [String!]) {
+      orders(first: $first, after: $after, search: $search, searchFields: $searchFields) {
+        edges {
+          cursor
+          node {
+            ${fieldsString}
+          }
         }
-      }
-      pageInfo {
-        endCursor
-        hasNextPage
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        totalCount
       }
     }
-  }
-`;
+  `;
+}
 
-export function useOrders(first = 10, after?: string) {
+export function useOrders(
+  first = 10,
+  after?: string,
+  visibleFields: string[] = [
+    "orderID",
+    "firstName",
+    "lastName",
+    "email",
+    "status",
+    "price",
+    "orderedAt",
+  ],
+  search?: string,
+  searchFields?: string[]
+) {
   return useQuery({
-    queryKey: ["orders", first, after],
+    queryKey: [
+      "orders",
+      first,
+      after,
+      visibleFields.sort(),
+      search,
+      searchFields?.sort(),
+    ],
     queryFn: async () => {
-      const res: OrdersQueryResponse = await graphqlClient.request(
-        ORDERS_QUERY,
-        {
-          first,
-          after,
-        }
-      );
+      const query = buildOrdersQuery(visibleFields);
+      const res: OrdersQueryResponse = await graphqlClient.request(query, {
+        first,
+        after,
+        search,
+        searchFields,
+      });
       return res.orders;
     },
   });

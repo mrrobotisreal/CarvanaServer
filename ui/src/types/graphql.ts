@@ -46,6 +46,7 @@ export interface PageInfo {
 export interface OrdersConnection {
   edges: OrderEdge[];
   pageInfo: PageInfo;
+  totalCount: number;
 }
 
 export interface OrdersQueryResponse {

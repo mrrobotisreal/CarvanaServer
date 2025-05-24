@@ -11,10 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-export const columns: ColumnDef<OrderEdge["node"]>[] = [
+export const allColumns: ColumnDef<OrderEdge["node"]>[] = [
   {
     accessorKey: "orderID",
-    header: "ID",
+    header: "Order ID",
     cell: ({ row }) => <div>{row.getValue("orderID")}</div>,
     enableSorting: true,
     enableHiding: false,
@@ -26,7 +26,7 @@ export const columns: ColumnDef<OrderEdge["node"]>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        First
+        First Name
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -39,7 +39,7 @@ export const columns: ColumnDef<OrderEdge["node"]>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Last
+        Last Name
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -61,7 +61,16 @@ export const columns: ColumnDef<OrderEdge["node"]>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <div>{row.getValue("status")}</div>,
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("status")}</div>
+    ),
+  },
+  {
+    accessorKey: "paymentMethod",
+    header: "Payment Method",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("paymentMethod")}</div>
+    ),
   },
   {
     accessorKey: "price",
@@ -71,6 +80,127 @@ export const columns: ColumnDef<OrderEdge["node"]>[] = [
         style: "currency",
         currency: "USD",
       }),
+  },
+  {
+    accessorKey: "tax",
+    header: "Tax",
+    cell: ({ getValue }) =>
+      (getValue<number>() / 100).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+      }),
+  },
+  {
+    accessorKey: "deliveryFee",
+    header: "Delivery Fee",
+    cell: ({ getValue }) =>
+      (getValue<number>() / 100).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+      }),
+  },
+  {
+    accessorKey: "orderedAt",
+    header: "Ordered At",
+    cell: ({ getValue }) => (
+      <div>{new Date(getValue<string>()).toLocaleDateString()}</div>
+    ),
+  },
+  {
+    accessorKey: "paidAt",
+    header: "Paid At",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value ? new Date(value).toLocaleDateString() : "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "inTransitAt",
+    header: "In Transit At",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value ? new Date(value).toLocaleDateString() : "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "deliveredAt",
+    header: "Delivered At",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value ? new Date(value).toLocaleDateString() : "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "make",
+    header: "Make",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "carModel",
+    header: "Model",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "year",
+    header: "Year",
+    cell: ({ getValue }) => {
+      const value = getValue<number | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "color",
+    header: "Color",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div className="capitalize">{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "vin",
+    header: "VIN",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div className="font-mono text-sm">{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "address",
+    header: "Address",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "city",
+    header: "City",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "state",
+    header: "State",
+    cell: ({ getValue }) => {
+      const value = getValue<string | null>();
+      return <div>{value || "N/A"}</div>;
+    },
+  },
+  {
+    accessorKey: "zip",
+    header: "ZIP",
+    cell: ({ getValue }) => {
+      const value = getValue<number | null>();
+      return <div>{value || "N/A"}</div>;
+    },
   },
   {
     id: "actions",
@@ -112,3 +242,16 @@ export const columns: ColumnDef<OrderEdge["node"]>[] = [
     },
   },
 ];
+
+export const defaultVisibleColumns = [
+  "orderID",
+  "firstName",
+  "lastName",
+  "email",
+  "status",
+  "price",
+  "orderedAt",
+  "actions",
+];
+
+export const columns = allColumns;

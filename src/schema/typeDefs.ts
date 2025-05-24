@@ -46,6 +46,11 @@ export const typeDefs = gql`
   }
 
   type Query {
-    orders(first: Int = 10, after: String, search: String): OrderConnection!
+    orders(
+      first: Int = 10
+      after: String
+      search: String
+      searchFields: [String!]
+    ): OrderConnection!
   }
 `;
