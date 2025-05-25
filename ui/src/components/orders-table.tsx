@@ -41,10 +41,10 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 export function OrdersTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -70,7 +70,6 @@ export function OrdersTable() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [isSearchFilterOpen, setIsSearchFilterOpen] = useState(false);
   const [selectedSearchFilters, setSelectedSearchFilters] = useState<string[]>(
     []
   );
@@ -91,7 +90,7 @@ export function OrdersTable() {
   const [isStateChecked, setIsStateChecked] = useState(false);
   const [isZipChecked, setIsZipChecked] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
+
   const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
 
   const debouncedSearchText = useDebounce(searchText, 1000);
@@ -374,7 +373,7 @@ export function OrdersTable() {
   return (
     <Card className="w-full rounded-md border p-4 bg-gray-600">
       <div className="flex flex-row items-center justify-evenly py-4">
-        <Popover open={isSearchFilterOpen} onOpenChange={setIsSearchFilterOpen}>
+        <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -708,7 +707,7 @@ export function OrdersTable() {
           )}
         </div>
 
-        <Popover open={columnSettingsOpen} onOpenChange={setColumnSettingsOpen}>
+        <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -883,30 +882,38 @@ export function OrdersTable() {
                     Orders per page
                   </p>
                   <Separator />
-                  <RadioGroup
+                  <DropdownMenuRadioGroup
                     defaultChecked
                     defaultValue="10"
                     className="flex flex-col gap-2 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md p-2"
                     value={pageSize.toString()}
                     onValueChange={(value) => updatePageSize(Number(value))}
                   >
-                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
-                      <RadioGroupItem value="10" />
+                    <DropdownMenuRadioItem
+                      className="flex flex-row space-x-2 items-center justify-start"
+                      value="10"
+                    >
                       <p className=" font-medium text-center">10 orders</p>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
-                      <RadioGroupItem value="20" />
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      className="flex flex-row space-x-2 items-center justify-start"
+                      value="20"
+                    >
                       <p className=" font-medium text-center">20 orders</p>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
-                      <RadioGroupItem value="50" />
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      className="flex flex-row space-x-2 items-center justify-start"
+                      value="50"
+                    >
                       <p className=" font-medium text-center">50 orders</p>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-row space-x-2 items-center justify-start">
-                      <RadioGroupItem value="100" />
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      className="flex flex-row space-x-2 items-center justify-start"
+                      value="100"
+                    >
                       <p className=" font-medium text-center">100 orders</p>
-                    </DropdownMenuItem>
-                  </RadioGroup>
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>

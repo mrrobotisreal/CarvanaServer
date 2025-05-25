@@ -234,13 +234,13 @@ export class AnalyticsService {
   private flushInterval = 30000; // 30 seconds
   private sessionStartTime: Date;
   private pageViewStartTime: Date;
-  private lastActivity: Date;
+  // private lastActivity: Date;
 
   constructor() {
     this.sessionId = getSessionId();
     this.sessionStartTime = new Date();
     this.pageViewStartTime = new Date();
-    this.lastActivity = new Date();
+    // this.lastActivity = new Date();
 
     setInterval(() => this.flush(), this.flushInterval);
 
@@ -310,7 +310,7 @@ export class AnalyticsService {
 
   async trackUsage(data: UsageData) {
     try {
-      this.lastActivity = new Date();
+      // this.lastActivity = new Date();
 
       const usageData = {
         ...data,
