@@ -1,7 +1,26 @@
 import { Order } from '../models/Order';
 import { toCursor, fromCursor } from "../utils/encodeCursor";
+import { analyticsResolvers } from "./analyticsResolvers";
+import { GraphQLScalarType, Kind } from "graphql";
 
-export const resolvers = {
+const JSONScalar = new GraphQLScalarType({
+  name: "JSON",
+  description: "JSON custom scalar type",
+  serialize(value) {
+    return value;
+  },
+  parseValue(value) {
+    return value;
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.STRING) {
+      return JSON.parse(ast.value);
+    }
+    return null;
+  },
+});
+
+const ordersResolvers = {
   Query: {
     orders: async (_: any, { first, page, search, searchFields }: any) => {
       const filter: any = {};
@@ -71,5 +90,16 @@ export const resolvers = {
         totalCount,
       };
     },
+  },
+};
+
+export const resolvers = {
+  JSON: JSONScalar,
+  Query: {
+    ...ordersResolvers.Query,
+    ...analyticsResolvers.Query,
+  },
+  Mutation: {
+    ...analyticsResolvers.Mutation,
   },
 };

@@ -2,6 +2,7 @@ import type { OrdersQueryResponse } from "@/types/graphql";
 import { useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/graphql-client";
 import { gql } from "graphql-request";
+import { analytics } from "@/lib/analytics";
 
 const fieldMapping: Record<string, string> = {
   orderID: "orderID",
@@ -81,14 +82,49 @@ export function useOrders(
       searchFields?.sort(),
     ],
     queryFn: async () => {
+      const startTime = Date.now();
       const query = buildOrdersQuery(visibleFields);
-      const res: OrdersQueryResponse = await graphqlClient.request(query, {
-        first,
-        page,
-        search,
-        searchFields,
-      });
-      return res.orders;
+      const querySize = new Blob([query]).size;
+
+      try {
+        const res: OrdersQueryResponse = await graphqlClient.request(query, {
+          first,
+          page,
+          search,
+          searchFields,
+        });
+
+        const responseString = JSON.stringify(res);
+        const responseSize = new Blob([responseString]).size;
+
+        analytics.trackGraphQLQuery(
+          "orders",
+          Date.now() - startTime,
+          querySize,
+          responseSize
+        );
+
+        return res.orders;
+      } catch (error) {
+        analytics.trackGraphQLQuery(
+          "orders",
+          Date.now() - startTime,
+          querySize
+        );
+
+        analytics.trackUsage({
+          actionType: "error",
+          metadata: {
+            errorType: "graphql_query_error",
+            errorMessage:
+              error instanceof Error ? error.message : "Unknown GraphQL error",
+            queryName: "orders",
+            querySize,
+          },
+        });
+
+        throw error;
+      }
     },
   });
 }

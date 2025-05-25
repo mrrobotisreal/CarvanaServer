@@ -7,13 +7,26 @@ import { ApolloServer } from "apollo-server-express";
 import mongoose from "mongoose";
 import { typeDefs } from "./schema/typeDefs";
 import { resolvers } from "./schema/resolvers";
+import { connectAnalyticsDB } from "./config/database";
+import "./models";
 
 (async () => {
   await mongoose.connect(process.env.MONGO_URI!);
+  console.log("✅ MongoDB connected successfully.");
+
+  await connectAnalyticsDB();
+
   const app = express();
+
+  app.set("trust proxy", true);
   app.use(cors());
 
-  const server = new ApolloServer({ typeDefs, resolvers });
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => ({ req }),
+  });
+
   await server.start();
   server.applyMiddleware({ app: app as any, path: "/graphql" });
 

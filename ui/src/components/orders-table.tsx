@@ -12,6 +12,7 @@ import {
 import { allColumns, defaultVisibleColumns } from "./columns";
 import { useOrders } from "@/hooks/useOrders";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   FilterIcon,
   Loader2,
@@ -95,6 +96,14 @@ export function OrdersTable() {
 
   const debouncedSearchText = useDebounce(searchText, 1000);
 
+  const analytics = useAnalytics();
+
+  const prevPageSizeRef = useRef(pageSize);
+  const prevCurrentPageRef = useRef(currentPage);
+  const prevSearchTextRef = useRef("");
+  const prevSelectedSearchFiltersRef = useRef<string[]>([]);
+  const searchStartTimeRef = useRef<number>(0);
+
   const visibleFields = useMemo(() => {
     return Object.keys(columnVisibility).filter((key) => columnVisibility[key]);
   }, [columnVisibility]);
@@ -104,8 +113,30 @@ export function OrdersTable() {
   }, [selectedSearchFilters]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchText, searchFields]);
+    const searchTextChanged = debouncedSearchText !== prevSearchTextRef.current;
+    const searchFieldsChanged =
+      JSON.stringify(selectedSearchFilters) !==
+      JSON.stringify(prevSelectedSearchFiltersRef.current);
+
+    if (searchTextChanged || searchFieldsChanged) {
+      setCurrentPage(1);
+    }
+
+    if (searchTextChanged && searchStartTimeRef.current > 0) {
+      const searchDuration = Date.now() - searchStartTimeRef.current;
+      setTimeout(() => {
+        analytics.trackSearch(
+          debouncedSearchText,
+          selectedSearchFilters,
+          undefined,
+          searchDuration
+        );
+      }, 0);
+    }
+
+    prevSearchTextRef.current = debouncedSearchText;
+    prevSelectedSearchFiltersRef.current = selectedSearchFilters;
+  }, [debouncedSearchText, selectedSearchFilters, analytics]);
 
   const { data, isLoading, status, error } = useOrders(
     pageSize,
@@ -178,29 +209,83 @@ export function OrdersTable() {
   });
 
   const updatePageSize = (newPageSize: number) => {
+    const totalPages = data ? Math.ceil(data.totalCount / newPageSize) : 1;
+    analytics.trackPageSizeChange(
+      prevPageSizeRef.current,
+      newPageSize,
+      currentPage,
+      totalPages,
+      data?.totalCount || 0
+    );
+
+    prevPageSizeRef.current = newPageSize;
     setPageSize(newPageSize);
     setCurrentPage(1);
   };
 
   const goToNextPage = () => {
     if (data?.pageInfo.hasNextPage) {
-      setCurrentPage(currentPage + 1);
+      const newPage = currentPage + 1;
+      const totalPages = Math.ceil(data.totalCount / pageSize);
+
+      analytics.trackNextPage(
+        currentPage,
+        newPage,
+        pageSize,
+        totalPages,
+        data.totalCount
+      );
+
+      prevCurrentPageRef.current = newPage;
+      setCurrentPage(newPage);
     }
   };
 
   const goToPreviousPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      const newPage = currentPage - 1;
+      const totalPages = data ? Math.ceil(data.totalCount / pageSize) : 1;
+
+      analytics.trackPreviousPage(
+        currentPage,
+        newPage,
+        pageSize,
+        totalPages,
+        data?.totalCount || 0
+      );
+
+      prevCurrentPageRef.current = newPage;
+      setCurrentPage(newPage);
     }
   };
 
   const goToFirstPage = () => {
+    const totalPages = data ? Math.ceil(data.totalCount / pageSize) : 1;
+
+    analytics.trackFirstPage(
+      currentPage,
+      pageSize,
+      totalPages,
+      data?.totalCount || 0
+    );
+
+    prevCurrentPageRef.current = 1;
     setCurrentPage(1);
   };
 
   const goToLastPage = () => {
     if (data) {
       const totalPages = Math.ceil(data.totalCount / pageSize);
+
+      analytics.trackLastPage(
+        currentPage,
+        totalPages,
+        pageSize,
+        totalPages,
+        data.totalCount
+      );
+
+      prevCurrentPageRef.current = totalPages;
       setCurrentPage(totalPages);
     }
   };
@@ -220,12 +305,82 @@ export function OrdersTable() {
     }
   }, [isLoading, debouncedSearchText]);
 
+  const handleSearchFilterChange = (
+    checked: boolean | string,
+    filterName: string,
+    setterFunction: (value: boolean) => void
+  ) => {
+    const isChecked = !!checked;
+    let newFilters: string[];
+
+    if (isChecked) {
+      newFilters = [...new Set([...selectedSearchFilters, filterName])];
+    } else {
+      newFilters = selectedSearchFilters.filter(
+        (filter) => filter !== filterName
+      );
+    }
+
+    analytics.trackSearchFilterChange(
+      prevSelectedSearchFiltersRef.current,
+      newFilters
+    );
+    prevSelectedSearchFiltersRef.current = newFilters;
+
+    setSelectedSearchFilters(newFilters);
+    setterFunction(isChecked);
+  };
+
+  const handleColumnVisibilityChange = (
+    columnKey: string,
+    checked: boolean
+  ) => {
+    const currentVisibleColumns = Object.keys(columnVisibility).filter(
+      (key) => columnVisibility[key]
+    );
+    const newVisibleColumns = checked
+      ? [...currentVisibleColumns, columnKey]
+      : currentVisibleColumns.filter((col) => col !== columnKey);
+
+    analytics.trackColumnVisibility(
+      columnKey,
+      columnVisibility[columnKey] || false,
+      checked,
+      newVisibleColumns
+    );
+
+    setColumnVisibility((prev) => ({
+      ...prev,
+      [columnKey]: checked,
+    }));
+  };
+
+  const handleSearchTextChange = (value: string) => {
+    if (value && !searchStartTimeRef.current) {
+      searchStartTimeRef.current = Date.now();
+    } else if (!value && searchStartTimeRef.current) {
+      searchStartTimeRef.current = 0;
+    }
+
+    setSearchText(value);
+  };
+
+  const handleSearchClear = () => {
+    analytics.trackSearchClear();
+    searchStartTimeRef.current = 0;
+    setSearchText("");
+  };
+
   return (
     <Card className="w-full rounded-md border p-4 bg-gray-600">
       <div className="flex flex-row items-center justify-evenly py-4">
         <Popover open={isSearchFilterOpen} onOpenChange={setIsSearchFilterOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="bg-cvna-blue-3 text-white">
+            <Button
+              variant="outline"
+              className="bg-cvna-blue-3 text-white"
+              onClick={() => analytics.trackClick("search_filters_button")}
+            >
               <FilterIcon size={16} />
               <div className="hidden md:block">
                 {selectedSearchFilters.length === 0 && "Search filters"}
@@ -259,21 +414,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="order-id"
                     checked={isOrderIdChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "orderID"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "orderID"
-                          )
-                        );
-                      }
-                      setIsOrderIdChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "orderID",
+                        setIsOrderIdChecked
+                      )
+                    }
                   />
                   <label
                     htmlFor="order-id"
@@ -286,21 +433,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="email"
                     checked={isEmailChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "email"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "email"
-                          )
-                        );
-                      }
-                      setIsEmailChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "email",
+                        setIsEmailChecked
+                      )
+                    }
                   />
                   <label htmlFor="email" className="font-medium leading-none">
                     Email
@@ -310,21 +449,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="first-name"
                     checked={isFirstNameChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "firstName"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "firstName"
-                          )
-                        );
-                      }
-                      setIsFirstNameChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "firstName",
+                        setIsFirstNameChecked
+                      )
+                    }
                   />
                   <label
                     htmlFor="first-name"
@@ -337,21 +468,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="last-name"
                     checked={isLastNameChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "lastName"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "lastName"
-                          )
-                        );
-                      }
-                      setIsLastNameChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "lastName",
+                        setIsLastNameChecked
+                      )
+                    }
                   />
                   <label
                     htmlFor="last-name"
@@ -364,21 +487,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="status"
                     checked={isStatusChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "status"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "status"
-                          )
-                        );
-                      }
-                      setIsStatusChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "status",
+                        setIsStatusChecked
+                      )
+                    }
                   />
                   <label htmlFor="status" className="font-medium leading-none">
                     Status
@@ -388,24 +503,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="payment-method"
                     checked={isPaymentMethodChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([
-                            ...selectedSearchFilters,
-                            "paymentMethod",
-                          ]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "paymentMethod"
-                          )
-                        );
-                      }
-                      setIsPaymentMethodChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "paymentMethod",
+                        setIsPaymentMethodChecked
+                      )
+                    }
                   />
                   <label
                     htmlFor="payment-method"
@@ -418,21 +522,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="price"
                     checked={isPriceChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "price"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "price"
-                          )
-                        );
-                      }
-                      setIsPriceChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "price",
+                        setIsPriceChecked
+                      )
+                    }
                   />
                   <label htmlFor="price" className="font-medium leading-none">
                     Price
@@ -442,21 +538,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="make"
                     checked={isMakeChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "make"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "make"
-                          )
-                        );
-                      }
-                      setIsMakeChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "make",
+                        setIsMakeChecked
+                      )
+                    }
                   />
                   <label htmlFor="make" className="font-medium leading-none">
                     Make
@@ -467,21 +555,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="car-model"
                     checked={isCarModelChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "carModel"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "carModel"
-                          )
-                        );
-                      }
-                      setIsCarModelChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "carModel",
+                        setIsCarModelChecked
+                      )
+                    }
                   />
                   <label
                     htmlFor="car-model"
@@ -495,21 +575,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="year"
                     checked={isYearChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "year"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "year"
-                          )
-                        );
-                      }
-                      setIsYearChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "year",
+                        setIsYearChecked
+                      )
+                    }
                   />
                   <label htmlFor="year" className="font-medium leading-none">
                     Year
@@ -520,21 +592,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="color"
                     checked={isColorChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "color"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "color"
-                          )
-                        );
-                      }
-                      setIsColorChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "color",
+                        setIsColorChecked
+                      )
+                    }
                   />
                   <label htmlFor="color" className="font-medium leading-none">
                     Color
@@ -544,21 +608,9 @@ export function OrdersTable() {
                   <Checkbox
                     id="vin"
                     checked={isVinChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "vin"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "vin"
-                          )
-                        );
-                      }
-                      setIsVinChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(checked, "vin", setIsVinChecked)
+                    }
                   />
                   <label htmlFor="vin" className="font-medium leading-none">
                     VIN
@@ -568,21 +620,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="address"
                     checked={isAddressChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "address"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "address"
-                          )
-                        );
-                      }
-                      setIsAddressChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "address",
+                        setIsAddressChecked
+                      )
+                    }
                   />
                   <label htmlFor="address" className="font-medium leading-none">
                     Address
@@ -593,21 +637,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="city"
                     checked={isCityChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "city"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "city"
-                          )
-                        );
-                      }
-                      setIsCityChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "city",
+                        setIsCityChecked
+                      )
+                    }
                   />
                   <label htmlFor="city" className="font-medium leading-none">
                     City
@@ -618,21 +654,13 @@ export function OrdersTable() {
                   <Checkbox
                     id="state"
                     checked={isStateChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "state"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "state"
-                          )
-                        );
-                      }
-                      setIsStateChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(
+                        checked,
+                        "state",
+                        setIsStateChecked
+                      )
+                    }
                   />
                   <label htmlFor="state" className="font-medium leading-none">
                     State
@@ -643,21 +671,9 @@ export function OrdersTable() {
                   <Checkbox
                     id="zip"
                     checked={isZipChecked}
-                    onCheckedChange={(checked) => {
-                      const isChecked = !!checked;
-                      if (isChecked) {
-                        setSelectedSearchFilters([
-                          ...new Set([...selectedSearchFilters, "zip"]),
-                        ]);
-                      } else {
-                        setSelectedSearchFilters(
-                          selectedSearchFilters.filter(
-                            (filter) => filter !== "zip"
-                          )
-                        );
-                      }
-                      setIsZipChecked(!!checked);
-                    }}
+                    onCheckedChange={(checked) =>
+                      handleSearchFilterChange(checked, "zip", setIsZipChecked)
+                    }
                   />
                   <label htmlFor="zip" className="font-medium leading-none">
                     Zip
@@ -676,7 +692,7 @@ export function OrdersTable() {
                 : "Search all fields..."
             }
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => handleSearchTextChange(e.target.value)}
             className="bg-white pr-8"
             ref={searchInputRef}
           />
@@ -685,7 +701,7 @@ export function OrdersTable() {
               variant="ghost"
               size="sm"
               className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-200"
-              onClick={() => setSearchText("")}
+              onClick={handleSearchClear}
             >
               <X size={14} />
             </Button>
@@ -694,7 +710,11 @@ export function OrdersTable() {
 
         <Popover open={columnSettingsOpen} onOpenChange={setColumnSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="bg-cvna-blue-3 text-white">
+            <Button
+              variant="outline"
+              className="bg-cvna-blue-3 text-white"
+              onClick={() => analytics.trackClick("column_settings_button")}
+            >
               <SettingsIcon size={16} />
               <div className="hidden md:block">Column settings</div>
             </Button>
@@ -733,12 +753,9 @@ export function OrdersTable() {
                         <Switch
                           id={columnKey}
                           checked={columnVisibility[columnKey] || false}
-                          onCheckedChange={(checked) => {
-                            setColumnVisibility((prev) => ({
-                              ...prev,
-                              [columnKey]: checked,
-                            }));
-                          }}
+                          onCheckedChange={(checked) =>
+                            handleColumnVisibilityChange(columnKey, checked)
+                          }
                         />
                         <label
                           htmlFor={columnKey}
@@ -855,6 +872,7 @@ export function OrdersTable() {
                 <Button
                   variant="outline"
                   className="text-sm md:text-lg bg-cvna-blue-3 text-white"
+                  onClick={() => analytics.trackClick("page_size_dropdown")}
                 >
                   {pageSize} orders
                 </Button>
