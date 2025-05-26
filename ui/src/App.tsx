@@ -147,7 +147,7 @@ function App() {
                 className="rounded-full bg-white hover:border-2 hover:border-cvna-blue-2 dark:hover:border-cvna-blue-2"
               >
                 <a
-                  href="https://github.com/mrrobotisreal/text_formatter"
+                  href="https://github.com/mrrobotisreal/CarvanaServer"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
