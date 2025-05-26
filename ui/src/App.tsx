@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import logo from "@/assets/logo.svg";
 import { useEffect, useRef } from "react";
 import { analytics } from "@/lib/analytics";
+import winappsLogo from "@/assets/logo_transparent_shadow.svg";
+import githubLogo from "@/assets/github.svg";
+import { Button } from "./components/ui/button";
 
 const qc = new QueryClient();
 
@@ -108,15 +111,60 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={qc}>
-        <main className="min-h-screen w-full p-8 mx-auto space-y-4 bg-cvna-blue-7">
-          <div className="w-full flex flex-row items-center justify-center gap-2">
-            <img src={logo} alt="Carvana Orders" className="w-12 h-12" />
-            <h1 className="text-3xl font-bold text-white items-center justify-center text-center">
-              Carvana Orders
-            </h1>
-          </div>
+        <main className="min-h-screen w-full mx-auto space-y-4 bg-cvna-blue-7">
+          <nav className="sticky top-0 z-50 w-full border-b bg-cvna-blue-7/95 backdrop-blur supports-[backdrop-filter]:bg-cvna-blue-7/60">
+            <div className="w-full flex-row container mx-auto px-4 h-16 flex items-center justify-between">
+              <a
+                href="https://winapps.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={winappsLogo}
+                  alt="WinApps Logo"
+                  className="h-12 w-12"
+                />
+                <h3
+                  className="text-2xl font-semibold text-white hidden md:block"
+                  style={{ fontFamily: "ubuntu" }}
+                >
+                  WinApps
+                </h3>
+              </a>
 
-          <OrdersTable />
+              <div className="flex items-center space-x-3">
+                <img src={logo} alt="Carvana Orders" className="w-12 h-12" />
+                <h1 className="text-3xl font-bold text-white items-center justify-center text-center hidden md:block">
+                  Carvana Orders
+                </h1>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="rounded-full bg-white hover:border-2 hover:border-cvna-blue-2 dark:hover:border-cvna-blue-2"
+              >
+                <a
+                  href="https://github.com/mrrobotisreal/text_formatter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src={githubLogo}
+                    alt="GitHub"
+                    className="h-12 w-12 dark:invert"
+                  />
+                  <span className="sr-only">View on GitHub</span>
+                </a>
+              </Button>
+            </div>
+          </nav>
+
+          <div className="w-full mx-auto px-4">
+            <OrdersTable />
+          </div>
         </main>
 
         {/*
